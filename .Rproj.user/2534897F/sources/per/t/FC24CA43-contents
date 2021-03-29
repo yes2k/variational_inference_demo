@@ -1,0 +1,56 @@
+library(shiny)
+library(tidyverse)
+
+ui <- fluidPage(
+    titlePanel("Kullback Leibler Divergence Demo"),
+    sidebarLayout(
+        sidebarPanel(
+            tabsetPanel(id="tab",
+                type="tabs",
+                tabPanel( "Normal-Normal",
+                    h3("Normal 1", style="color:red"),
+                    sliderInput(inputId = "mean1", "Mean", min=-10, max=10, value=0),
+                    sliderInput(inputId = "sd1", "Standard Deviation",min=1, max=10, value=1),
+                    hr(),
+                    h3("Normal 2", style="color:blue"),
+                    sliderInput(inputId = "mean2", "Mean", min=-10, max=10, value=0),
+                    sliderInput(inputId = "sd2", "Standard Deviation",min=1, max=10, value=1),
+                    htmlOutput("kl", style = "font-size:20px"))
+                ,
+                tabPanel("Gamma-Gamma")
+            )
+        ),
+        mainPanel(
+            plotOutput("plot")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$plot <- renderPlot({
+        if(input$tab == "Normal-Normal"){
+            ggplot(data = data.frame(x = c(-10, 10)), aes(x)) +
+                stat_function(fun = dnorm, n = 101, 
+                              args = list(mean = input$mean1, sd = input$sd1), col="red")+ 
+                stat_function(fun = dnorm, n = 101, 
+                              args = list(mean = input$mean2, sd = input$sd2), col="blue") +
+                ylab("") + xlim(-10, 10) + ylim(0, 0.5)   
+        }else if(input$tab == "Normal-Exponential"){
+            ggplot(data = data.frame(x = c(-10, 10)), aes(x)) +
+                stat_function(fun = dnorm, n = 101,
+                              args = list(mean = input$mean3, sd = input$sd3), col="red")+
+                stat_function(fun = dexp, n = 101,
+                              args = list(rate = input$rate), col="blue") +
+                ylab("") + xlim(0, 10) + ylim(0, 0.5)
+        }   
+    })
+    output$kl <- renderText({
+        paste0(
+            "KL(Normal 1 || Normal 2) = ",
+            log(input$sd2 / input$sd1) + 
+                (input$sd2^2 + (input$mean1 - input$mean2)^2)/(2*input$sd2^2) - 0.5   
+        )
+    })
+}
+
+shinyApp(ui = ui, server = server)
